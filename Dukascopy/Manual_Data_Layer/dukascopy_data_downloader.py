@@ -3,44 +3,47 @@ import requests
 from zipfile import ZipFile
 from io import BytesIO
 import argparse
+from datetime import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(BASE_DIR, "bi5_data")
 
 BASE_URL = "https://datafeed.dukascopy.com/datafeed"
 
-#Constructs Dukascopy dataset filename part - Example: BID_candles_min_1
-def build_dataset_name(price_type: str = "BID", data_type: str = "candles", timeframe: str = "min_1") -> str:
+def build_filename(symbol: str,
+                   year: int,
+                   month: int,
+                   day: int,
+                   hour: int) -> str:
     
-    return f"{price_type.upper()}_{data_type}_{timeframe}"
+    return f"{symbol.upper()}_{year}{month:02d}{day:02d}_{hour:02d}h.bi5"
 
 
-#Builds url (uses default values in case arguments are not provided) for download
-def build_url(symbol: str, 
+#Builds url for fetching data from Dukascopy server for download
+def build_download_url(symbol: str, 
               year: int, 
               month: int, 
               day: int,
-              price_type: str = "BID",
-              data_type: str = "candles",
-              timeframe: str = "min_1") -> str:
+              hour: str = "") -> str:
 
-    zip_file_name = build_dataset_name(price_type, data_type, timeframe)
 
-    return (
+    return(
     f"{BASE_URL}/"
     f"{symbol.upper()}/"
     f"{year}/"
     f"{month:02d}/"
     f"{day:02d}/"
-    f"00h_ticks.bi5"
+    f"{hour:02d}h_ticks.bi5"
     )
 
 
 def download_file(url):
+    
     r = requests.get(url, stream=True)
     if r.status_code != 200:
         print("[ERROR] URL unreachable.")
         return None
+    
     return r.content
 
 
@@ -49,50 +52,88 @@ def extract_zip(zip_bytes, output_dir):
         z.extractall(output_dir)
 
 
-def download_day(symbol, year, month, day, output_dir="OUTPUT_DIR"):
-    url = build_url(symbol, year, month, day)
+def download_day(symbol, year, month, day, output_dir="bi5_data"):
 
-    print(f"[INFO] Downloading: {url}")
+    for hour in range(0, 24, 1):     
+        
+        url = build_download_url(symbol, year, month, day, hour)
+        print(f"[INFO] Downloading: {url}")
+        data = download_file(url)
+        
+        if data is None:
+            
+            print("[WARNING] No data for this date.")
+            
+            continue
 
-    data = download_file(url)
+        dir = os.path.join(
+            output_dir,
+            symbol,
+            f"{year}-{month:02d}-{day:02d}"
+        )
 
-    if data is None:
-        print("[WARNING] No data for this date.")
-        return
+        os.makedirs(dir, exist_ok=True)
 
-    dir = os.path.join(
-        output_dir,
-        symbol,
-        f"{year}-{month:02d}-{day:02d}"
-    )
-
-    os.makedirs(dir, exist_ok=True)
+        file_name = build_filename(symbol, year, month, day, hour)
+        
+        open(file, "wb").write(data)
 
     #extract_zip(data, dir)
 
-    print(f"[SUCCESSFUL] Data saved to {dir}")
+    print(f"[SUCCESSFUL] Fetched data saved to {dir}")
 
 
 def parse_args():
+    
     parser = argparse.ArgumentParser(description="Dukascopy Data Downloader")
 
     parser.add_argument("--symbol", type=str, default="EURUSD", help="Market symbol (e.g. EURUSD)")
-    parser.add_argument("--year", type=int, default=2024, help="Year")
-    parser.add_argument("--month", type=int, default=1, help="Month")
-    parser.add_argument("--day", type=int, default=2, help="Day")
-    parser.add_argument("--output", type=str, default="data", help="Output directory")
+
+    #Single day
+    parser.add_argument("--year", type=int, help="Year")
+    parser.add_argument("--month", type=int, help="Month")
+    parser.add_argument("--day", type=int, help="Day") 
+
+    #Range
+    parser.add_argument("--start-date", type=str, help="Start date in YYYY-MM-DD format")
+    parser.add_argument("--end-date", type=str, help="End date in YYYY-MM-DD format")
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
+    
     args = parse_args()
 
-    #TODO: Change single date specification to range 
-    download_day(
-        symbol=args.symbol,
-        year=args.year,
-        month=args.month,
-        day=args.day,
-        output_dir=args.output
-    )
+    #Single day mode
+    if args.year and args.month and args.day:
+
+        download_day(
+            symbol=args.symbol,
+            year=args.year,
+            month=args.month,
+            day=args.day
+        )
+
+    #Range mode
+    elif args.start_date and args.end_date:
+        
+        start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
+        end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+
+        current_date = start_date
+
+        while current_date <= end_date:
+            
+            download_day(
+                symbol=args.symbol,
+                year=current_date.year,
+                month=current_date.month,
+                day=current_date.day
+            )
+
+            current_date += timedelta(days=1)
+
+    else:
+        
+        print("[ERROR] Provide either --date or both --start-date and --end-date")
