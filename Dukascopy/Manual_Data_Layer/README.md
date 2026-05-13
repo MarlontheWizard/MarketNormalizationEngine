@@ -27,6 +27,7 @@ The system is designed around a clean separation of concerns:
 
 ```bash
 python dukascopy_data_downloader.py --symbol EURUSD --year 2024 --month 1 --day 2
+```
 
 ### Range Download
 
@@ -35,6 +36,7 @@ python dukascopy_data_downloader.py \
   --symbol EURUSD \
   --start-date 2024-01-01 \
   --end-date 2024-01-10
+```
 
 ## Thread Control
 
@@ -46,14 +48,18 @@ If no thread count is specified, the downloader uses:
 
 ```bash
 --threads 4
+```
 
 ### Custom Behavior
+
+```bash
 python dukascopy_data_downloader.py \
   --symbol EURUSD \
   --year 2024 \
   --month 1 \
   --day 2 \
   --threads 12
+```
 
 ### Disable Parallel Downloads
 
@@ -61,6 +67,7 @@ For single thread behavior use:
 
 ```bash
 --threads 1
+```
 
 ## Data Target Location
 
@@ -70,6 +77,7 @@ To specify the location (created if doesn't exist) to place the data in use:
 
 ```bash
 --location {location}
+```
 
 The default location is bi5_data in current directory.
 
