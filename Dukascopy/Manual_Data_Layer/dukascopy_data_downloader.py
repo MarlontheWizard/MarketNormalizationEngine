@@ -2,7 +2,6 @@ import os
 import requests
 from zipfile import ZipFile
 from io import BytesIO
-import argparse
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
@@ -114,47 +113,11 @@ def process_download(symbol, year, month, day, output_dir, threads):
 
     download_day_data(symbol, year, month, day, output_dir, threads)
 
+
+def begin_downloader_process(args):
     
-def parse_args():
-    
-    parser = argparse.ArgumentParser(description="Dukascopy Data Downloader")
-
-    parser.add_argument("--symbol", type=str, default="EURUSD", help="Market symbol (e.g. EURUSD)")
-
-    #Single day
-    parser.add_argument("--year", type=int, help="Year")
-    parser.add_argument("--month", type=int, help="Month")
-    parser.add_argument("--day", type=int, help="Day") 
-
-    #Range
-    parser.add_argument("--start-date", type=str, help="Start date in YYYY-MM-DD format")
-    parser.add_argument("--end-date", type=str, help="End date in YYYY-MM-DD format")
-
-    #Threads
-    parser.add_argument(
-        "--threads",
-        type=int,
-        default=4,
-        help="Number of parallel download threads to use"
-    )
-
-    #Folder name
-    parser.add_argument(
-        "--location",
-        type=str,
-        default="bi5_data",
-        help="Specify directory/location to store data in"
-    )
-    
-    return parser.parse_args()
-
-
-def main():
-    
-    args = parse_args()
-
     print("[BEGIN] Download requested data from Dukascopy.")
-          
+    
     #Single day mode
     if args.year and args.month and args.day:
 
@@ -210,8 +173,4 @@ def main():
 
         return 
 
-    print(f"[END] Fetched data saved to directory named {args.location}.")
-
-
-if __name__ == "__main__":
-    main()
+    print(f"[END] Fetched data saved to directory named {args.location}.")   
