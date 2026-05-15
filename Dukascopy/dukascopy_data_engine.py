@@ -8,7 +8,7 @@ def cli_parser_args():
 
     parser = subparsers.add_parser("parse")
 
-    parser.add_argument("--input-dir", default="bi5_data")
+    parser.add_argument("--input", type=str, help="Location of data to parse", default="bi5_data")
 
     return parser
     
@@ -70,6 +70,7 @@ def process_cli_parser():
 
     elif args.command == "parse":
 
+        
         pass
         
         #(args)
