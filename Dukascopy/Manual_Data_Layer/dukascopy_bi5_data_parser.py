@@ -119,12 +119,18 @@ def save_dataframe(df, file_path, data_root_path, output_path):
 
 def process_files(files, data_root_path, output_path):    
 
-    for file in files:
+    try:
+        
+        for file in files:
                                       
-        df = create_dataframe(file)
+            df = create_dataframe(file)
 
-        save_dataframe(df, file, data_root_path, output_path)
+            save_dataframe(df, file, data_root_path, output_path)
 
+    except Exception as e:
+
+            print(f"[FAILED] {file_path}")
+            print(e)
 
 def begin_parser_process(data_root_path="bi5_data"):
 
@@ -133,7 +139,7 @@ def begin_parser_process(data_root_path="bi5_data"):
    process_files(zipped_files, data_root_path, output_path="parsed_data")
 
 
-   
+''' Uncomment to facilitate direct isolated testing  
 def main():
 
     begin_parser_process()
@@ -142,3 +148,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+'''

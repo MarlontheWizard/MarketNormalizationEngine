@@ -1,3 +1,5 @@
 tqdm
 requests
 pandas
+fastparquet
+parquet-tools
