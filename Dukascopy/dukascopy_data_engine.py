@@ -4,6 +4,7 @@ import os
 import argparse
 import sys
 
+
 def cli_parser_args():
 
     parser = subparsers.add_parser("parse")
@@ -36,13 +37,22 @@ def cli_downloader_args():
         help="Number of parallel download threads to use"
     )
 
-    #Folder name
+    #Folder name(s)
     parser.add_argument(
-        "--location",
+        "--raw-data-dir",
         type=str,
-        default="bi5_data",
-        help="Specify directory/location to store data in"
+        default="raw_data",
+        help="Specify directory/location to store server data in"
     )
+
+    parser.add_argument(
+        "--parsed-data-dir",
+        type=str,
+        default="parsed_data",
+        help="Specify directory/location to store parsed data in"
+    )
+
+    
     
     return parser
 
@@ -58,7 +68,7 @@ def build_cli_parser():
     parse_parser = cli_parser_args()
 
 
-def process_cli_parser():
+def process_cli():
 
     cli_parser = build_cli_parser()
 
@@ -70,21 +80,48 @@ def process_cli_parser():
 
     elif args.command == "parse":
 
-        
-        pass
-        
-        #(args)
+        begin_parser_process(args):
 
-    else:
+    else: #do both
         
-        cli_parser.print_help()
+        try:
+            
+            begin_downloader_process(args)
 
+
+        except Exception as e:
+
+            print(f"[ENGINE ERROR] An error occurred: {e}")
+            
+            cli_parser.print_help()
+
+
+def print_banner():
     
+    print("""
+╔════════════════════════════════════════════════════════════╗
+║            DUKASCOPY DATA NORMALIZATION ENGINE             ║
+╠════════════════════════════════════════════════════════════╣
+║  Pipeline : BI5 → Tick Parser → Parquet Conversion         ║
+║                                                            ║
+║  Author   : Marlon Dominguez                               ║
+║  GitHub   : https://github.com/MarlontheWizard             ║
+║                                                            ║
+║  Status   : Initializing engine...                         ║
+╚════════════════════════════════════════════════════════════╝
+""")
+
+
+def start_dukascopy_engine():
+
+    print_banner()
+    process_cli()
+
+
 def main():
 
-    process_cli_parser()
-
-
+    start_dukascopy_engine()
+    
 
 if __name__ == "__main__":
     

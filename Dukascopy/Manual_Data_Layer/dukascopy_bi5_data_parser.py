@@ -3,6 +3,8 @@ import lzma
 import struct
 import pandas as pd
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
 
 
 TICK_STRUCT = ">3I2f"
@@ -117,26 +119,52 @@ def save_dataframe(df, file_path, data_root_path, output_path):
     #print(f"[SAVED] {output_path}")
     
 
-def process_files(files, data_root_path, output_path):    
+def process_file(files, data_root_path, output_path):    
 
     try:
         
-        for file in files:
-                                      
-            df = create_dataframe(file)
+        df = create_dataframe(file)
 
-            save_dataframe(df, file, data_root_path, output_path)
+        save_dataframe(df, file, data_root_path, output_path)
+
+        return None
 
     except Exception as e:
 
-            print(f"[FAILED] {file_path}")
-            print(e)
+        return (file, str(e))
 
-def begin_parser_process(data_root_path="bi5_data"):
 
-   zipped_files = find_bi5_files(data_root_path)
+def process_files(files, data_root_path, output_path, threads):
 
-   process_files(zipped_files, data_root_path, output_path="parsed_data")
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+
+        future_results = [executor.submit(process_single_file, file, data_root_path, output_path) for file in files]
+
+        with tqdm(total=len(files), desc="Parsing BI5 → Parquet") as pbar:
+
+            for f in as_completed(future_results):
+
+                result = f.result()
+
+                if result is not None:
+                    
+                    file, error = result
+                    print(f"[PARSER FAILED] {file}")
+                    print(error)
+
+                pbar.update(1)
+
+
+def begin_parser_process(args):
+
+   print(f"[PARSER START] Beginning parsing process for stored raw data in {args.raw_data_dir}...")
+
+   zipped_files = find_bi5_files(args.raw_data_dir)
+
+   process_files(zipped_files, args.raw_data_dir, args.parsed_data_dir, args.threads)
+
+   print(f"[PARSER END] Raw data parsed successfully to {args.parsed_data_dir}.")
+
 
 
 ''' Uncomment to facilitate direct isolated testing  

@@ -118,7 +118,7 @@ def download_day_data(symbol, year, month, day, output_dir, threads=4):
             for f in as_completed(futures):
                 f.result()
                 pbar.update(1)
-
+                
     #print(f"[DONE] Completed {year}-{month:02d}-{day:02d}")
 
 
@@ -130,7 +130,7 @@ def process_download(symbol, year, month, day, output_dir, threads):
 #Comment this function out to faciliate direct isolated testing
 def begin_downloader_process(args):
     
-    print("[BEGIN] Download requested data from Dukascopy.")
+    print("[DOWNLOADER START] Beginning download(s) for requested data from Dukascopy...")
     
     #Single day mode
     if args.year and args.month and args.day:
@@ -183,11 +183,11 @@ def begin_downloader_process(args):
             
     else:
         
-        print("[ERROR] Provide either --date or both --start-date and --end-date")
+        print("[DOWNLOADER ERROR] Provide either --date or both --start-date and --end-date")
 
         return 
 
-    print(f"[END] Fetched data saved to directory named {args.location}.")   
+    print(f"[DOWNLOADER END] Fetched data successfully saved to directory named {args.location}.")   
 
 
 
