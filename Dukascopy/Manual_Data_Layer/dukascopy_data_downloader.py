@@ -122,61 +122,62 @@ def download_day_data(symbol, year, month, day, output_dir, threads=4):
     #print(f"[DONE] Completed {year}-{month:02d}-{day:02d}")
 
 
+
 def process_download(symbol, year, month, day, output_dir, threads):
 
     download_day_data(symbol, year, month, day, output_dir, threads)
 
 
-#Comment this function out to faciliate direct isolated testing
-def begin_downloader_process(args):
+
+def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_data"):
+    
     
     print("[DOWNLOADER START] Beginning download(s) for requested data from Dukascopy...")
-    
-    #Single day mode
-    if args.year and args.month and args.day:
+
+    parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
+
+    if end_date is None: #Single day mode
 
         output_dir = os.path.join(
-                args.location,
-                args.symbol,
-                f"{args.year}-{args.month:02d}-{args.day:02d}"
-            )
+            location,
+            symbol,
+            f"{parsed_start_date.year}-{parsed_start_date.month:02d}-{parsed_start_date.day:02d}"
+        )
 
         os.makedirs(output_dir, exist_ok=True)
     
         process_download(
-            symbol=args.symbol,
-            year=args.year,
-            month=args.month,
-            day=args.day,
+            symbol=symbol,
+            year=parsed_start_date.year,
+            month=parsed_start_date.month,
+            day=parsed_start_date.day,
             output_dir=output_dir,
-            threads=args.threads
         )
-
-    #Range mode
-    elif args.start_date and args.end_date:
+            
+    elif end_date is not None: #Range mode
         
-        start_date = datetime.strptime(args.start_date, "%Y-%m-%d")
-        end_date = datetime.strptime(args.end_date, "%Y-%m-%d")
+        end_date = datetime.strptime(end_date, "%Y-%m-%d")
 
-        current_date = start_date
+        current_date = parsed_start_date
 
         while current_date <= end_date:
 
+            parsed_current_date = datetime.strptime(current_date, "%Y-%m-%d")
+
             output_dir = os.path.join(
-                args.location,
+                location,
                 symbol,
-                f"{year}-{month:02d}-{day:02d}"
+                f"{parsed_current_date.year}-{parsed_current_date.month:02d}-{parsed_current_date.day:02d}"
             )
 
             os.makedirs(output_dir, exist_ok=True)
     
             process_download(
-                symbol=args.symbol,
-                year=current_date.year,
-                month=current_date.month,
-                day=current_date.day,
+                symbol=symbol,
+                year=parser_current_date.year,
+                month=parser_current_date.month,
+                day=parser_current_date.day,
                 output_dir=output_dir,
-                threads=args.threads
             )
 
             current_date += timedelta(days=1)

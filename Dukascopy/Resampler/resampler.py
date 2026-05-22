@@ -103,7 +103,7 @@ def invoke_resampler(parquet_dir: str, timeframe: str):
     return resample_ticks(load_parquet_files(parquet_dir), timeframe)
 
 
-#''' Uncomment to facilitate direct isolated testing 
+''' Uncomment to facilitate direct isolated testing 
 def main():
 
     invoke_resampler()
@@ -113,4 +113,4 @@ def main():
 if __name__ == "__main__":
 
     main()
-#'''
+'''

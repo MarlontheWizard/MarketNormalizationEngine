@@ -76,17 +76,18 @@ def process_cli():
 
     if args.command == "fetch":
         
-        begin_downloader_process(args)
+        begin_downloader_process(args.symbol, args.raw_data_dir, args.start_date, args.end_date)
 
     elif args.command == "parse":
 
-        begin_parser_process(args):
+        begin_parser_process(args.raw_data_dir, args.parsed_data_dir)
 
     else: #do both
         
         try:
             
-            begin_downloader_process(args)
+            begin_downloader_process(args.symbol, args.raw_data_dir, args.start_date, args.end_date)
+            begin_parser_process(args.raw_data_dir, args.parsed_data_dir)
 
 
         except Exception as e:
