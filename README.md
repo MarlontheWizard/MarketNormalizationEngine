@@ -1,6 +1,6 @@
 # MarketNormalizationEngine
 
-Author Note: Please star this repository if you find it useful! It means alot to me.
+Author Note: Please star this repository if you find it useful! It means alot to me.  
              Email marlon.dominguez307@gmail.com for any implementation requests, contribution requests, or bugs.  
 
 ### Overview
@@ -76,7 +76,7 @@ To specify the location to place the data in use:
 
 If not specified then data is stored in engine directory.
 
-###Code Usage
+### Code Usage
 
 If using in code then you must invoke both the downloader, parser and of course the resampler individually. 
 
@@ -105,7 +105,7 @@ begin_downloader_process(
 )
 ```
 
-####Using the Parser
+#### Using the Parser
 
 Invoke the following function:
 
@@ -120,7 +120,7 @@ begin_parser_process(
 )
 ```
 
-####Using the Resampler
+#### Using the Resampler
 
 Example: 
 
