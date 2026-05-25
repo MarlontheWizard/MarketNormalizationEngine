@@ -1,5 +1,9 @@
 # MarketNormalizationEngine
 
+![Banner](Assets/banner.jpg)
+
+![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+
 Author Note: Please star this repository if you find it useful! It means alot to me.  
              Email marlon.dominguez307@gmail.com for any implementation requests, contribution requests, or bugs.  
 
