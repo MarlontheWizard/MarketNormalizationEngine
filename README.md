@@ -2,7 +2,9 @@
 
 ![Banner](Assets/banner.jpg)
 
+![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
+![Status](https://img.shields.io/badge/status-active-success)
 
 Author Note: Please star this repository if you find it useful! It means alot to me.  
              Email marlon.dominguez307@gmail.com for any implementation requests, contribution requests, or bugs.  
