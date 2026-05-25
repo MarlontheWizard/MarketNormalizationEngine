@@ -46,7 +46,7 @@ def cli_common_args(parser):
 
     #Folder name(s)
     parser.add_argument(
-        "----raw-data-dir",
+        "--raw-data-dir",
         type=str,
         default="raw_data",
         help="Specify directory/location to store server data in"
