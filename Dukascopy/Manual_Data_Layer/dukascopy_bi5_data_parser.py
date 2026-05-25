@@ -119,12 +119,16 @@ def save_dataframe(df, file_path, data_root_path, output_path):
     #print(f"[SAVED] {output_path}")
     
 
-def process_file(files, data_root_path, output_path):    
+def process_file(file, data_root_path, output_path):    
 
     try:
         
         df = create_dataframe(file)
 
+        if df is None or df.empty:
+            
+            return (file, "empty dataframe")
+            
         save_dataframe(df, file, data_root_path, output_path)
 
         return None
@@ -134,11 +138,11 @@ def process_file(files, data_root_path, output_path):
         return (file, str(e))
 
 
-def process_files(files, data_root_path, output_path, threads):
+def process_files(files, data_root_path, output_path):
 
-    with ThreadPoolExecutor(max_workers=threads) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
 
-        future_results = [executor.submit(process_single_file, file, data_root_path, output_path) for file in files]
+        future_results = [executor.submit(process_file, file, data_root_path, output_path) for file in files]
 
         with tqdm(total=len(files), desc="Parsing BI5 → Parquet") as pbar:
 
@@ -157,7 +161,7 @@ def process_files(files, data_root_path, output_path, threads):
 
 def begin_parser_process(raw_data_dir, parsed_data_dir):
 
-   print(f"[PARSER START] Beginning parsing process for stored raw data in {args.raw_data_dir}...")
+   print(f"[PARSER START] Beginning parsing process for stored raw data in {raw_data_dir}...")
 
    zipped_files = find_bi5_files(raw_data_dir)
 

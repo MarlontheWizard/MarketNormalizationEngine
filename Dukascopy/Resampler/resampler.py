@@ -1,60 +1,88 @@
 import pandas as pd
 import os
+from concurrent.futures import ThreadPoolExecutor
 
-def load_parquet_files(parquet_dir: str) -> pd.DataFrame:
 
-    parquet_files = []
+def save_resampled_data(resampled, symbol, timeframe, date, output_base="resampled_data"):
 
-    #recursively find parquet files
+    output_dir = os.path.join(
+        output_base,
+        symbol,
+        timeframe
+    )
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(
+        output_dir,
+        f"{date}.parquet"
+    )
+    
+    resampled.to_parquet(output_path)
+
+
+def group_files_by_day(parquet_dir):
+
+    grouped_files = {}
+
     for root, _, files in os.walk(parquet_dir):
 
         for file in files:
 
-            if file.endswith(".parquet"):
+            if not file.endswith(".parquet"):
+                continue
 
-                parquet_files.append(
-                    os.path.join(root, file)
-                )
+            full_path = os.path.join(root, file)
 
-    parquet_files = sorted(parquet_files)
+            date = file.split("_")[1][:8]
 
-    if not parquet_files:
+            if date not in grouped_files:
 
-        raise FileNotFoundError(
-            f"No parquet files found in: {parquet_dir}"
-        )
+                grouped_files[date] = []
 
-    #load all parquet files
+            grouped_files[date].append(full_path)
+
+    return grouped_files
+
+
+def load_day_files(files):
+
     dataframes = [
         pd.read_parquet(file)
-        for file in parquet_files
+        for file in sorted(files)
     ]
 
-    #combine into single dataframe
     combined_df = pd.concat(
         dataframes,
         ignore_index=True
     )
 
-    #ensure timestamps are datetime
     combined_df["timestamp"] = pd.to_datetime(
         combined_df["timestamp"]
     )
 
-    #sort chronologically
     combined_df = combined_df.sort_values(
         "timestamp"
     )
 
-    #reset clean index
-    combined_df = combined_df.reset_index(drop=True)
-
-    return combined_df
+    return combined_df.reset_index(drop=True)
 
 
 
+def process_day(date, files, symbol, timeframe, output_base):
+
+    df = load_day_files(files)
+
+    resampled = resample_ticks(df, timeframe)
+
+    save_resampled_data(resampled, symbol=symbol, timeframe=timeframe, date=date, output_base=output_base)
+
+    return resampled
+    
+    
 def resample_ticks(df: pd.DataFrame, timeframe: str = "1min") -> pd.DataFrame:
-    """
+    
+    '''
     Resample tick data into OHLCV-style bars.
 
     Parameters:
@@ -63,11 +91,11 @@ def resample_ticks(df: pd.DataFrame, timeframe: str = "1min") -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: resampled OHLCV dataframe
-    """
+    '''
 
     df = df.copy()
 
-    #ensure datetime index
+    #datetime index
     df["timestamp"] = pd.to_datetime(df["timestamp"])
     df = df.set_index("timestamp")
 
@@ -87,22 +115,45 @@ def resample_ticks(df: pd.DataFrame, timeframe: str = "1min") -> pd.DataFrame:
     resampled["ask_volume"] = df["ask_volume"].resample(timeframe).sum()
 
     '''
-    #optional: spread feature
+    #optional spread feature
     df["spread"] = df["ask"] - df["bid"]
     resampled["avg_spread"] = df["spread"].resample(timeframe).mean()
     '''
-    
-    #clean up
-    resampled = resampled.dropna().reset_index()
 
+    resampled = resampled.dropna().reset_index()
+        
     return resampled
 
 
-def invoke_resampler(parquet_dir: str, timeframe: str):
+    
+def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base="resampled_data"):
 
-    return resample_ticks(load_parquet_files(parquet_dir), timeframe)
+    grouped = group_files_by_day(parquet_dir)
 
+    results = {}
 
+    with ThreadPoolExecutor(max_workers=4) as executor:
+
+        futures = [
+            executor.submit(
+                process_day,
+                date,
+                files,
+                symbol,
+                timeframe,
+                output_base
+            )
+            for date, files in grouped.items()
+        ]
+
+        for f in futures:
+            df = f.result()
+            results[df["timestamp"].iloc[0].date()] = df
+
+    return results
+    
+
+    
 ''' Uncomment to facilitate direct isolated testing 
 def main():
 

@@ -1,23 +1,30 @@
 from Manual_Data_Layer import dukascopy_bi5_data_parser
 from Manual_Data_Layer import dukascopy_data_downloader
+from Resampler import resampler
+
 import os
 import argparse
 import sys
 
 
-def cli_parser_args():
 
-    parser = subparsers.add_parser("parse")
+def cli_resampler_args(parser):
+    
+    parser.add_argument("--timeframe", type=str, help="specify desired timeframe to resample")
 
-    parser.add_argument("--input", type=str, help="Location of data to parse", default="bi5_data")
+    parser.add_argument("--resampled-data-dir", type=str, default="resampled_data", help="specify location to place resampled data in")
 
     return parser
-    
-    
-def cli_downloader_args():
-    
-    parser = subparsers.add_parser("download")
 
+    
+    
+def cli_common_args(parser):
+
+
+    #Operation
+    parser.add_argument("--operation", type=str, help="resample is the only operation available")
+    
+    #Symbol(s)
     parser.add_argument("--symbol", type=str, default="EURUSD", help="Market symbol (e.g. EURUSD)")
 
     #Single day
@@ -39,7 +46,7 @@ def cli_downloader_args():
 
     #Folder name(s)
     parser.add_argument(
-        "--raw-data-dir",
+        "----raw-data-dir",
         type=str,
         default="raw_data",
         help="Specify directory/location to store server data in"
@@ -50,54 +57,25 @@ def cli_downloader_args():
         type=str,
         default="parsed_data",
         help="Specify directory/location to store parsed data in"
-    )
-
-    
+    ) 
+ 
     
     return parser
 
 
 def build_cli_parser():
 
-    cli_parser = argparse.ArgumentParser(description="MarketNormalizationEngine")
+    parser = argparse.ArgumentParser(description="MarketNormalizationEngine")
 
-    subparsers = cli_parser.add_subparsers(dest="command")
+    cli_common_args(parser)
 
-    downloader_parser = cli_downloader_args()
+    cli_resampler_args(parser)
 
-    parse_parser = cli_parser_args()
-
-
-def process_cli():
-
-    cli_parser = build_cli_parser()
-
-    args = cli_parser.parse_args()
-
-    if args.command == "fetch":
-        
-        begin_downloader_process(args.symbol, args.raw_data_dir, args.start_date, args.end_date)
-
-    elif args.command == "parse":
-
-        begin_parser_process(args.raw_data_dir, args.parsed_data_dir)
-
-    else: #do both
-        
-        try:
-            
-            begin_downloader_process(args.symbol, args.raw_data_dir, args.start_date, args.end_date)
-            begin_parser_process(args.raw_data_dir, args.parsed_data_dir)
+    return parser
 
 
-        except Exception as e:
 
-            print(f"[ENGINE ERROR] An error occurred: {e}")
-            
-            cli_parser.print_help()
-
-
-def print_banner():
+def print_resampler_banner():
     
     print("""
 ╔════════════════════════════════════════════════════════════╗
@@ -108,14 +86,59 @@ def print_banner():
 ║  Author   : Marlon Dominguez                               ║
 ║  GitHub   : https://github.com/MarlontheWizard             ║
 ║                                                            ║
-║  Status   : Initializing engine...                         ║
+║  Status   : Invoking resampler...                          ║
 ╚════════════════════════════════════════════════════════════╝
 """)
+
+    
+def print_default_banner():
+    
+    print("""
+╔════════════════════════════════════════════════════════════╗
+║            DUKASCOPY DATA NORMALIZATION ENGINE             ║
+╠════════════════════════════════════════════════════════════╣
+║  Pipeline : BI5 → Tick Parser → Parquet Conversion         ║
+║                                                            ║
+║  Author   : Marlon Dominguez                               ║
+║  GitHub   : https://github.com/MarlontheWizard             ║
+║                                                            ║
+║  Status   : Invoking downloader and parser...              ║
+╚════════════════════════════════════════════════════════════╝
+""")
+
+    
+
+def process_cli():
+
+    cli_parser = build_cli_parser()
+    
+    args = cli_parser.parse_args()
+
+    try:
+
+        if args.operation == "resample":
+
+            print_resampler_banner()
+
+            resampler.invoke_resampler(args.parsed_data_dir, args.symbol, args.timeframe, args.resampled_data_dir)
+            
+        else:
+
+            print_default_banner()
+        
+            dukascopy_data_downloader.begin_downloader_process(args.symbol, args.start_date, args.end_date, args.raw_data_dir)
+            dukascopy_bi5_data_parser.begin_parser_process(args.raw_data_dir, args.parsed_data_dir)
+
+        
+    except Exception as e:
+
+        print(f"[ENGINE ERROR] An error occurred: {e}")
+            
+        cli_parser.print_help()
 
 
 def start_dukascopy_engine():
 
-    print_banner()
     process_cli()
 
 

@@ -46,7 +46,7 @@ def fetch_data_from_server(url):
     r = requests.get(url, timeout=350)    
     
     if r.status_code != 200:
-        print("[ERROR] URL unreachable.")
+        print(f"[ERROR] URL unreachable: {url}")
         return None
     
     return r.content
@@ -91,11 +91,11 @@ def download_hour_data(symbol, year, month, day, hour, output_dir):
 
     
 #Dukascopy server only provides data in hourly timeframe
-def download_day_data(symbol, year, month, day, output_dir, threads=4):
+def download_day_data(symbol, year, month, day, output_dir):
 
     hours = list(range(24))
 
-    with ThreadPoolExecutor(max_workers=threads) as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
 
         futures = [
             executor.submit(
@@ -123,9 +123,9 @@ def download_day_data(symbol, year, month, day, output_dir, threads=4):
 
 
 
-def process_download(symbol, year, month, day, output_dir, threads):
+def process_download(symbol, year, month, day, output_dir):
 
-    download_day_data(symbol, year, month, day, output_dir, threads)
+    download_day_data(symbol, year, month, day, output_dir)
 
 
 
@@ -188,7 +188,7 @@ def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_
 
         return 
 
-    print(f"[DOWNLOADER END] Fetched data successfully saved to directory named {args.location}.")   
+    print(f"[DOWNLOADER END] Fetched data successfully saved to directory named {location}.")   
 
 
 
