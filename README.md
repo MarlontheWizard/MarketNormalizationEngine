@@ -6,16 +6,32 @@
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-Author Note: Please star this repository if you find it useful! It means alot to me.  
-             Email marlon.dominguez307@gmail.com for any implementation requests, contribution requests, or bugs.  
+###Author Note 
+
+Please star this repository if you find it useful! It means alot to me.  
+Email marlon.dominguez307@gmail.com for any implementation requests, contribution requests, or bug requests.  
 
 ### Overview
 
-A high-performance, parallelized market data ingestion tool designed to download and structure raw tick data from Dukascopy into a clean, ML-ready format.
+A high-performance, parallelized market data ingestion and normalization engine designed to download, parse, organize, and resample raw Dukascopy forex tick data into a clean ML-ready format.
 
 This project focuses on data normalization infrastructure, not trading logic.
 
 ## Dukascopy (Forex Data)
+
+### Features
+
+* Parallelized hourly tick downloads
+* Automatic retry queue with exponential backoff
+* Corrupted/empty response detection
+* Structured parquet-based storage
+* BI5 → Parquet normalization pipeline
+* Multithreaded parsing and resampling
+* ML-ready dataframe generation
+* CLI and code-driven execution
+* Hierarchical dataset organization
+* Timeframe aggregation using Pandas resampling
+* Detailed logging and ingestion diagnostics
 
 ### Architecture
 
@@ -26,24 +42,85 @@ The system is designed around a clean separation of concerns:
 - Parser → decode bid/ask/mid and normalie
 - Resampler → Produce dataframe with requested timeframe
 
-### Features
+Completely ready for feature Extraction / ML! 
 
-- Parallel downloads using ThreadPoolExecutor
-- Clean hierarchical storage structure
-- Hour-based tick segmentation
-- Code and/or CLI-driven execution 
-- Resampler to provide data as dataframe for usage in code 
+#### Components
+
+##### Downloader
+
+Fetches raw .bi5 tick data directly from Dukascopy servers.
+
+##### Parser
+
+Decodes compressed binary tick data into normalized parquet datasets.
+
+##### Storage Layer
+
+Organizes data hierarchically by:
+
+```bash
+symbol/date/hour
+```
+
+##### Resampler
+
+Aggregates tick data into configurable timeframes such as:
+
+```bash
+1min
+5min
+15min
+1h
+4h
+1d
+```
+
+### Storage Structure 
+
+#### Raw BI5 Data
+
+```bash
+raw_data/
+    EURUSD/
+        2024-01-02/
+            EURUSD_20240102_00h.bi5
+            EURUSD_20240102_01h.bi5
+```
+
+#### Parsed Parquet Data
+
+```bash
+parsed_data/
+    EURUSD/
+        2024-01-02/
+            EURUSD_20240102_00h.parquet
+            EURUSD_20240102_01h.parquet
+```
+
+#### Resampled Data
+
+```bash
+resampled_data/
+    EURUSD/
+        1min/
+            20240102.parquet
+
+        5min/
+            20240102.parquet
+
+        1h/
+            20240102.parquet
+```
 
 ### CLI Usage
 
-NOTE: Resampler cannot be used through CLI. Read the next section to learn more.
-
-As mentioned below, if a specific operation is not specified then the downloader and parser are both performed.
+By default, the engine performs download and parse operations automatically.
+In other words, if a specific operation is not specified then the downloader and parser are both performed.
 
 #### Single Day Download
 
 ```bash
-python dukascopy_data_engine.py --symbol EURUSD --year 2024 --month 1 --day 2
+python dukascopy_data_engine.py --symbol EURUSD --start-date 2024-01-02
 ```
 
 #### Range Download
@@ -52,53 +129,52 @@ python dukascopy_data_engine.py --symbol EURUSD --year 2024 --month 1 --day 2
 python dukascopy_data_engine.py --symbol EURUSD --start-date 2024-01-01 --end-date 2024-01-10
 ```
 
-#### Default Operation Control
-
-NOTE: If fetch or parse are not specified in the command line then both are performed.
-
-To specify an operation insert fetch or parse:
+#### Custom Output Directories
 
 ```bash
-python dukascopy_data_engine.py <operation> --symbol EURUSD --year 2024 --month 1 --day 2
+python dukascopy_data_engine.py 
+
+--symbol EURUSD 
+
+--start-date 2024-01-02 
+
+--raw-data-dir custom_raw_data 
+
+--parsed-data-dir custom_parsed_data
 ```
 
-#### Default Thread Behavior
-
-The downloader and parser use four threads.
-
-#### Custom Thread Behavior
-
-Custom thread behavior has been removed. If you would like a different thread count then you must change it in the code.
-
-#### Data Target Location
-
-##### Specify Directory
-
-To specify the location to place the data in use:
+#### Resampling Through CLI 
 
 ```bash
---location {location}
+python dukascopy_data_engine.py --operation resample --symbol EURUSD --parsed-data-dir parsed_data --timeframe 1min
 ```
-
-If not specified then data is stored in engine directory.
 
 ### Code Usage
 
-If using in code then you must invoke both the downloader, parser and of course the resampler individually. 
+The engine can also be used programmatically. 
 
-#### Import
-
-Import dukascopy_bi5_data_parser, dukascopy_data_downloader, and resampler in your code as needed. 
-
-#### Using the downloader
-
-Invoke the following function:
+#### Imports
 
 ```bash
-def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_data")
+from dukascopy_data_downloader import begin_downloader_process
+from dukascopy_bi5_data_parser import begin_parser_process
+import resampler
 ```
 
-Example: 
+#### Using the Downloader 
+
+##### Function
+
+```bash
+begin_downloader_process(
+    symbol,
+    start_date,
+    end_date=None,
+    location="raw_data"
+)
+```
+
+##### Example
 
 ```bash
 from dukascopy_data_downloader import begin_downloader_process
@@ -113,26 +189,74 @@ begin_downloader_process(
 
 #### Using the Parser
 
-Invoke the following function:
-
-Example:
+##### Example
 
 ```bash
-from dukascopy_bi5_data_parser import begin_parser_process 
+from dukascopy_bi5_data_parser import begin_parser_process
 
 begin_parser_process(
-    	"bi5_data",
-    	"parsed_data"
+    "raw_data",
+    "parsed_data"
 )
 ```
 
-#### Using the Resampler
+#### Using the Resampler 
 
-Example: 
+##### Example
 
 ```bash
 import resampler
-import pandas as pd
 
-df = resampler.invoke_resampler("../Manual_Data_Layer/parsed_data", "1d")
+results = resampler.invoke_resampler(
+    parquet_dir="parsed_data",
+    symbol="EURUSD",
+    timeframe="1d"
+)
 ```
+
+The resampler returns: 
+
+```bash
+dict[date] -> pandas.DataFrame
+```
+
+where each dataframe contains normalized OHLCV-style bars. 
+
+##### Example Columns
+
+```bash
+timestamp
+open
+high
+low
+close
+bid_volume
+ask_volume
+```
+#### Supported Resampler Timeframes
+
+The resampler currently supports:
+
+```bash
+1s
+5s
+15s
+30s
+
+1min
+5min
+15min
+30min
+
+1h
+4h
+
+1d
+1w
+```
+
+### License
+
+This project is licensed under the Apache 2.0 License.
+
+
