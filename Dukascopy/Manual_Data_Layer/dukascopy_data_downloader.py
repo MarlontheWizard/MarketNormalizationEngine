@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import lzma
 import argparse
+import time
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +24,7 @@ def build_filename(symbol: str,
     return f"{symbol.upper()}_{year}{month:02d}{day:02d}_{hour:02d}h.bi5"
 
 
+    
 #Builds url for fetching data from Dukascopy server for download
 def build_download_url(symbol: str, 
               year: int, 
@@ -41,51 +43,106 @@ def build_download_url(symbol: str,
     )
 
 
-def fetch_data_from_server(url):
-    
-    r = requests.get(url, timeout=350)    
-    
-    if r.status_code != 200:
-        print(f"[ERROR] URL unreachable: {url}")
-        return None
-    
-    return r.content
+def log_download(symbol, year, month, day, hour, message):
 
+    tqdm.write(f"[{symbol} {year}-{month:02d}-{day:02d} {hour:02d}h] {message}")
+    
 
-def download_hour_data(symbol, year, month, day, hour, output_dir):
- 
+def fetch_data_from_server(symbol, year, month, day, hour, url, retries=5, timeout=350, backoff_base=2):
+
+    for attempt in range(1, retries + 1):
+
         
-    url = build_download_url(symbol, year, month, day, hour)
-    
-    #print(f"[INFO] Downloading: {url}")
-    
-    data = fetch_data_from_server(url)
-        
-    if data is None:
+        try:
+
+            r = requests.get(url, timeout=timeout)
+
             
-        print(f"[WARNING] No data for hour {hour} on {year}-{month}-{day}")    
+            if r.status_code != 200:
 
-        return
+               log_download(symbol, year, month, day, hour,
 
-    #Validate LZMA integrity before saving
-    try:
+                f"FETCH WARNING HTTP {r.status_code} attempt {attempt}/{retries}")
+
+            
+            elif not r.content:
+
+                return None, "empty_response"
+
+            
+            else:
+
+                return r.content, None
+
         
+        except requests.exceptions.RequestException as e:
+
+            log_download(symbol, year, month, day, hour,
+
+                f"FETCH RETRY attempt {attempt}/{retries} error={e}")
+
+        
+        if attempt < retries:
+
+            sleep_time = backoff_base ** (attempt - 1)
+
+            log_download(symbol, year, month, day, hour,
+
+                f"BACKOFF sleeping {sleep_time}s before retry")
+
+            
+            time.sleep(sleep_time)
+
+    
+    log_download(symbol, year, month, day, hour, "FETCH FAILED")
+    
+    return None, "fetch_failed"
+
+    
+
+
+def is_valid_bi5(data: bytes) -> bool:
+
+    try:
+
         lzma.decompress(data)
+
+        return True
 
     except Exception:
 
-        print(f"[CORRUPTED DOWNLOAD] {url}")
-
-        return
+        return False
 
 
+
+def download_hour_data(symbol, year, month, day, hour, output_dir):
+
+    url = build_download_url(symbol, year, month, day, hour)
+
+    data, fetch_reason = fetch_data_from_server(symbol, year, month, day, hour, url)
+
+    
+    if data is None:
+
+        return {"success": False, "hour": hour, "reason": fetch_reason}
+
+    
+    if not is_valid_bi5(data):
+
+        return {"success": False, "hour": hour, "reason": "no_valid_ticks_or_corrupted"}
+
+    
     file_name = build_filename(symbol, year, month, day, hour)
 
     file_path = os.path.join(output_dir, file_name)
+
     
     with open(file_path, "wb") as f:
-        
+
         f.write(data)
+
+    
+    return {"success": True, "hour": hour, "reason": None}
 
     #print(f"[SUCCESSFUL] Completed hour {hour}. Fetched data saved to {dir}")
 
@@ -95,30 +152,78 @@ def download_day_data(symbol, year, month, day, output_dir):
 
     hours = list(range(24))
 
+    failed_hours = []
+
+    skipped_hours = []
+
+    retryable_reasons = {"fetch_failed"}
+
+    
     with ThreadPoolExecutor(max_workers=4) as executor:
 
         futures = [
-            executor.submit(
-                download_hour_data,
-                symbol,
-                year,
-                month,
-                day,
-                hour,
-                output_dir
-            )
-            
+
+            executor.submit(download_hour_data, symbol, year, month, day, hour, output_dir) 
+
             for hour in hours
+
         ]
 
-        results = []
+        with tqdm(total=len(futures), desc=f"{symbol} {year}-{month:02d}-{day:02d}") as pbar:
 
-        with tqdm(total=24, desc=f"{symbol} {year}-{month:02d}-{day:02d}") as pbar:
+            for future in as_completed(futures):
 
-            for f in as_completed(futures):
-                f.result()
+                result = future.result()
+
+                if not result["success"]:
+
+                    if result["reason"] in retryable_reasons:
+
+                        failed_hours.append(result["hour"])
+
+                    else:
+
+                        skipped_hours.append((result["hour"], result["reason"]))
+
                 pbar.update(1)
-                
+
+    
+    if skipped_hours:
+
+        tqdm.write("[SKIPPED HOURS]")
+
+        for hour, reason in sorted(skipped_hours):
+
+            tqdm.write(f"  {symbol} {year}-{month:02d}-{day:02d} " f"{hour:02d}h -> {reason}")
+
+    
+    if failed_hours:
+
+        tqdm.write(f"[RETRY QUEUE] Retrying failed hours: {failed_hours}")
+
+        retry_failed_hours = []
+
+        for hour in failed_hours:
+
+            result = download_hour_data(symbol, year, month, day, hour, output_dir)
+
+            
+            if not result["success"]:
+
+                retry_failed_hours.append(hour)
+
+                tqdm.write(f"[FINAL ATTEMPT FAILED] "f"{symbol} {year}-{month:02d}-{day:02d} "f"{hour:02d}h reason={result['reason']}")
+
+            
+            else:
+
+                tqdm.write(f"[RECOVERED] "f"{symbol} {year}-{month:02d}-{day:02d} "f"{hour:02d}h")
+
+        
+        if retry_failed_hours:
+
+            tqdm.write(f"[WARNING] Unresolved missing hours: {retry_failed_hours}")
+   
     #print(f"[DONE] Completed {year}-{month:02d}-{day:02d}")
 
 
@@ -162,7 +267,7 @@ def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_
 
         while current_date <= end_date:
 
-            parsed_current_date = datetime.strptime(current_date, "%Y-%m-%d")
+            parsed_current_date = current_date
 
             output_dir = os.path.join(
                 location,
@@ -174,9 +279,9 @@ def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_
     
             process_download(
                 symbol=symbol,
-                year=parser_current_date.year,
-                month=parser_current_date.month,
-                day=parser_current_date.day,
+                year=parsed_current_date.year,
+                month=parsed_current_date.month,
+                day=parsed_current_date.day,
                 output_dir=output_dir,
             )
 
