@@ -161,13 +161,13 @@ def process_files(files, data_root_path, output_path):
 
 def begin_parser_process(raw_data_dir, parsed_data_dir):
 
-   print(f"[PARSER START] Beginning parsing process for stored raw data in {raw_data_dir}...")
+   print(f"\n[PARSER START] Beginning parsing process for stored raw data in {raw_data_dir}...")
 
    zipped_files = find_bi5_files(raw_data_dir)
 
    process_files(zipped_files, raw_data_dir, parsed_data_dir)
 
-   print(f"[PARSER END] Raw data parsed successfully to {parsed_data_dir}.")
+   print(f"[PARSER END] Raw data parsed successfully to {parsed_data_dir}.\n")
 
 
 
