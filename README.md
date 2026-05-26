@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
-###Author Note 
+### Author Note 
 
 Please star this repository if you find it useful! It means alot to me.  
 Email marlon.dominguez307@gmail.com for any implementation requests, contribution requests, or bug requests.  
@@ -73,6 +73,16 @@ Aggregates tick data into configurable timeframes such as:
 1h
 4h
 1d
+1w
+```
+
+Additional rarer timeframes supported: 
+
+```bash
+1s 
+5s   
+15s
+30s
 ```
 
 ### Storage Structure 
@@ -232,27 +242,6 @@ low
 close
 bid_volume
 ask_volume
-```
-#### Supported Resampler Timeframes
-
-The resampler currently supports:
-
-```bash
-1s
-5s
-15s
-30s
-
-1min
-5min
-15min
-30min
-
-1h
-4h
-
-1d
-1w
 ```
 
 ### License
