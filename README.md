@@ -130,19 +130,19 @@ In other words, if a specific operation is not specified then the downloader and
 #### Single Day Download
 
 ```bash
-python dukascopy_data_engine.py --symbol EURUSD --start-date 2024-01-02
+python dukascopy_engine.py --symbol EURUSD --start-date 2024-01-02
 ```
 
 #### Range Download
 
 ```bash
-python dukascopy_data_engine.py --symbol EURUSD --start-date 2024-01-01 --end-date 2024-01-10
+python dukascopy_engine.py --symbol EURUSD --start-date 2024-01-01 --end-date 2024-01-10
 ```
 
 #### Custom Output Directories
 
 ```bash
-python dukascopy_data_engine.py 
+python dukascopy_engine.py 
 
 --symbol EURUSD 
 
@@ -156,7 +156,7 @@ python dukascopy_data_engine.py
 #### Resampling Through CLI 
 
 ```bash
-python dukascopy_data_engine.py --operation resample --symbol EURUSD --parsed-data-dir parsed_data --timeframe 1min
+python dukascopy_engine.py --operation resample --symbol EURUSD --parsed-data-dir parsed_data --timeframe 1min
 ```
 
 ### Code Usage
@@ -166,9 +166,9 @@ The engine can also be used programmatically.
 #### Imports
 
 ```bash
-from dukascopy_data_downloader import begin_downloader_process
-from dukascopy_bi5_data_parser import begin_parser_process
-import resampler
+from downloader import begin_downloader_process
+from parser import begin_parser_process
+from resampler import invoke_resampler
 ```
 
 #### Using the Downloader 
@@ -187,7 +187,7 @@ begin_downloader_process(
 ##### Example
 
 ```bash
-from dukascopy_data_downloader import begin_downloader_process
+from downloader import begin_downloader_process
 
 begin_downloader_process(
     symbol="EURUSD",
@@ -202,7 +202,7 @@ begin_downloader_process(
 ##### Example
 
 ```bash
-from dukascopy_bi5_data_parser import begin_parser_process
+from parser import begin_parser_process
 
 begin_parser_process(
     "raw_data",
@@ -265,5 +265,3 @@ ask_volume
 ### License
 
 This project is licensed under the Apache 2.0 License.
-
-
