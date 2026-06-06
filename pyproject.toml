@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "marketnormalizationengine"
 version = "0.1.0"
@@ -15,9 +19,9 @@ dependencies = [
   "pyarrow"
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["marketnormalizationengine*"]
+
 [project.scripts]
 dukascopy-engine = "marketnormalizationengine.dukascopy.data_engine:main"
-
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
