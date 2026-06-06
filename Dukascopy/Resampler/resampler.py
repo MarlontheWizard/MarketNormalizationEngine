@@ -215,6 +215,7 @@ def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base=
 
 
     tqdm.write(f"[RESAMPLER START] Resampling {symbol} from {parquet_dir} " f"to timeframe = {timeframe}")
+
     
     grouped = group_files_by_day(parquet_dir)
 
