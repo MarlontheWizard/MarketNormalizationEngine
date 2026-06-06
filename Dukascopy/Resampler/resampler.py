@@ -201,7 +201,7 @@ def process_day(date, files, symbol, timeframe, output_base):
         
         save_resampled_data(resampled, symbol=symbol, timeframe=timeframe, date=date, output_base=output_base)
 
-        return {"success": True, "date": date, "rows": len(resampled)}
+        return {"success": True, "date": date, "rows": len(resampled), "dataframe": resampled}
 
     
     except Exception as e:
@@ -211,7 +211,7 @@ def process_day(date, files, symbol, timeframe, output_base):
 
 
     
-def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base="resampled_data"):
+def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base="resampled_data", return_combined=False):
 
 
     tqdm.write(f"[RESAMPLER START] Resampling {symbol} from {parquet_dir} " f"to timeframe = {timeframe}")
@@ -228,6 +228,7 @@ def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base=
         
     results = {}
 
+    
     with ThreadPoolExecutor(max_workers=4) as executor:
 
         futures = [
@@ -252,8 +253,8 @@ def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base=
 
                     tqdm.write(f"[RESAMPLER SUCCESS] {result['date']} " f"rows={result['rows']}")
 
-                    results[result["date"]] = result
-
+                    results[result["date"]] = result["dataframe"]
+                    
                 else:
 
                     tqdm.write(f"[RESAMPLER SKIPPED] {result['date']} " f"reason={result['reason']}")
@@ -263,6 +264,17 @@ def invoke_resampler(parquet_dir: str, symbol: str, timeframe: str, output_base=
 
     
     tqdm.write(f"[RESAMPLER END] Completed. Successful days: {len(results)}\n")
+
+    
+    if return_combined:
+        
+        if not results:
+
+            return pd.DataFrame()
+
+            
+        return (pd.concat(results.values(), ignore_index=True).sort_values("timestamp").reset_index(drop=True))
+
 
     return results
     

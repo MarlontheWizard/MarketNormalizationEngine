@@ -220,11 +220,29 @@ import resampler
 results = resampler.invoke_resampler(
     parquet_dir="parsed_data",
     symbol="EURUSD",
-    timeframe="1d"
+    timeframe="1d",
+    output_base="resampled_data",
+    return_combined=False
 )
 ```
 
-The resampler returns: 
+There are two different forms that the resampler can return data in.
+
+If you want all the data combined into one dataframe then use:
+
+```bash
+return_combined=True
+```
+
+This is perfect, for example,  if you want feature extraction ready data for AI models.
+ 
+If you want the data in seperate dataframes structured by the specified timeframe use:
+
+```bash
+return_combined=False
+```
+
+In this case The resampler returns a dataframe of dataframes: 
 
 ```bash
 dict[date] -> pandas.DataFrame
