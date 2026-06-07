@@ -32,12 +32,14 @@ def build_download_url(symbol: str,
               day: int,
               hour: str = "") -> str:
 
+    #dukascopy uses zero padded month values
+    dukascopy_month = month - 1 
 
     return(
     f"{BASE_URL}/"
     f"{symbol.upper()}/"
     f"{year}/"
-    f"{month:02d}/"
+    f"{dukascopy_month:02d}/"
     f"{day:02d}/"
     f"{hour:02d}h_ticks.bi5"
     )
