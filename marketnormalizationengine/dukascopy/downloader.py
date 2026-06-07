@@ -32,7 +32,7 @@ def build_download_url(symbol: str,
               day: int,
               hour: str = "") -> str:
 
-    #dukascopy uses zero padded month values
+    #dukascopy uses zero based month values
     dukascopy_month = month - 1 
 
     return(
@@ -59,7 +59,10 @@ def fetch_data_from_server(symbol, year, month, day, hour, url, retries=5, timeo
 
             r = requests.get(url, timeout=timeout)
 
-            
+            if r.status_code == 404:
+
+    		return None, "missing_hour_404"
+
             if r.status_code != 200:
 
                log_download(symbol, year, month, day, hour,
