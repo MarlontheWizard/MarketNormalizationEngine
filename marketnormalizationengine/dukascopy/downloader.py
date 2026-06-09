@@ -61,11 +61,11 @@ def fetch_data_from_server(symbol, year, month, day, hour, url, retries=5, timeo
 
             if r.status_code == 404:
 
-    		return None, "missing_hour_404"
+    	        return None, "missing_hour_404"
 
             if r.status_code != 200:
 
-               log_download(symbol, year, month, day, hour,
+                log_download(symbol, year, month, day, hour,
 
                 f"FETCH WARNING HTTP {r.status_code} attempt {attempt}/{retries}")
 
