@@ -1,6 +1,6 @@
 # MarketNormalizationEngine
 
-![Banner](Assets/banner.jpg)
+![Banner](assets/banner.jpg)
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-blue)
