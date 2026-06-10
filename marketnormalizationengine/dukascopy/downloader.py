@@ -2,7 +2,7 @@ import os
 import requests
 from zipfile import ZipFile
 from io import BytesIO
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import lzma
