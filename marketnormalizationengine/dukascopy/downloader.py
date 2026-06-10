@@ -239,6 +239,16 @@ def process_download(symbol, year, month, day, output_dir):
 
 
 
+def is_weekend(current_date):
+	
+    if current_date.weekday() >= 5:
+	
+        return True
+
+    return False
+
+
+
 def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_data"):
     
     
@@ -247,6 +257,13 @@ def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_
     parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
 
     if end_date is None: #Single day mode
+	
+	if is_weekend(parsed_start_date):
+
+	    print("[DOWNLOADER FAIL] Market was closed on this date."
+
+	    return
+
 
         output_dir = os.path.join(
             location,
@@ -266,29 +283,34 @@ def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_
             
     elif end_date is not None: #Range mode
         
+	
         end_date = datetime.strptime(end_date, "%Y-%m-%d")
 
         current_date = parsed_start_date
 
         while current_date <= end_date:
+	    
+            if not is_weekend(current_date):
+	
 
-            parsed_current_date = current_date
+                parsed_current_date = current_date
+	    
+                output_dir = os.path.join(
+                    location,
+                    symbol,
+                    f"{parsed_current_date.year}-{parsed_current_date.month:02d}-{parsed_current_date.day:02d}"
+                )
 
-            output_dir = os.path.join(
-                location,
-                symbol,
-                f"{parsed_current_date.year}-{parsed_current_date.month:02d}-{parsed_current_date.day:02d}"
-            )
-
-            os.makedirs(output_dir, exist_ok=True)
+                os.makedirs(output_dir, exist_ok=True)
     
-            process_download(
-                symbol=symbol,
-                year=parsed_current_date.year,
-                month=parsed_current_date.month,
-                day=parsed_current_date.day,
-                output_dir=output_dir,
-            )
+                process_download(
+                    symbol=symbol,
+                    year=parsed_current_date.year,
+                    month=parsed_current_date.month,
+                    day=parsed_current_date.day,
+                    output_dir=output_dir,
+                )
+
 
             current_date += timedelta(days=1)
             
