@@ -238,7 +238,6 @@ def process_download(symbol, year, month, day, output_dir):
     download_day_data(symbol, year, month, day, output_dir)
 
 
-
 def is_weekend(current_date):
 	
     if current_date.weekday() >= 5:
@@ -257,12 +256,12 @@ def begin_downloader_process(symbol, start_date, end_date=None, location = "raw_
     parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d")
 
     if end_date is None: #Single day mode
-	
-	if is_weekend(parsed_start_date):
 
-	    print("[DOWNLOADER FAIL] Market was closed on this date."
+        if is_weekend(parsed_start_date):
 
-	    return
+            print("[DOWNLOADER FAIL] Market was closed on this date.")
+
+            return
 
 
         output_dir = os.path.join(
